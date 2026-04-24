@@ -22,18 +22,23 @@ async def get_target_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if message.reply_to_message:
         return message.reply_to_message.from_user
 
-    # @mention veya ID ile kullanıldıysa
+    # Mention entity'den kullanıcıyı al
+    if message.entities:
+        for entity in message.entities:
+            if entity.type == "text_mention":
+                return entity.user
+            elif entity.type == "mention":
+                username = message.text[entity.offset:entity.offset + entity.length]
+                try:
+                    chat = await context.bot.get_chat(username)
+                    return chat
+                except Exception:
+                    pass
+
+    # ID ile
     if context.args:
         arg = context.args[0]
-        if arg.startswith("@"):
-            try:
-                member = await context.bot.get_chat_member(
-                    update.effective_chat.id, arg
-                )
-                return member.user
-            except Exception:
-                return None
-        elif arg.lstrip("-").isdigit():
+        if arg.lstrip("-").isdigit():
             try:
                 member = await context.bot.get_chat_member(
                     update.effective_chat.id, int(arg)
@@ -42,7 +47,6 @@ async def get_target_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 return None
     return None
-
 
 # ─────────────────────────────────────────────
 # BAN
